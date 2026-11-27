@@ -1,0 +1,28 @@
+name: Build EXE
+on:
+  push:
+    branches: [ "main" ]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install customtkinter pypdf pywin32 pystray pillow pyinstaller
+      - run: pyinstaller --noconfirm --onefile --windowed --name "ProjectHubPro" ProjectHubPro.py
+      - shell: pwsh
+        run: |
+          $c = Get-Content "ProjectHubPro.py" -Raw
+          $v = if ($c -match "APP_VERSION\s*=\s*'([^']+)'") { $matches[1] } else { "4.0.0" }
+          @{ version = $v; exe_url = "https://github.com{{ github.repository }}/releases/latest/download/ProjectHubPro.exe" } | ConvertTo-Json | Out-File "version.json" -Encoding utf8
+          echo "TAG=v$v" >> $env:GITHUB_ENV
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: |
+            dist/ProjectHubPro.exe
+            version.json
