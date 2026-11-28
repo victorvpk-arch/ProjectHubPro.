@@ -2,6 +2,7 @@ name: Build EXE
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -17,8 +18,9 @@ jobs:
       - shell: pwsh
         run: |
           $c = Get-Content "ProjectHubPro.py" -Raw
-          $v = if ($c -match "APP_VERSION\s*=\s*'([^']+)'") { $matches[1] } else { "4.0.0" }
-          @{ version = $v; exe_url = "https://github.com{{ github.repository }}/releases/latest/download/ProjectHubPro.exe" } | ConvertTo-Json | Out-File "version.json" -Encoding utf8
+          if ($c -match "APP_VERSION\s*=\s*'([^']+)'") { $v = $Matches[1] } else { $v = "4.0.0" }
+          $json = @{ version = $v; exe_url = "https://github.com{{ github.repository }}/releases/latest/download/ProjectHubPro.exe" } | ConvertTo-Json
+          $json | Out-File -FilePath "version.json" -Encoding utf8
           echo "TAG=v$v" >> $env:GITHUB_ENV
       - uses: softprops/action-gh-release@v2
         with:
