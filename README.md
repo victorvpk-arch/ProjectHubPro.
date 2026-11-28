@@ -1,1 +1,1 @@
-# ProjectHubPro.
+# ProjectHubPro
