@@ -10,21 +10,32 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: app
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install customtkinter pypdf pywin32 pystray pillow pyinstaller
-      - run: pyinstaller --noconfirm --onefile --windowed --name "ProjectHubPro" ProjectHubPro.py
-      - shell: pwsh
+
+      - name: Install and Build
+        working-directory: app
+        run: |
+          pip install customtkinter pypdf pywin32 pystray pillow pyinstaller
+          pyinstaller --noconfirm --onefile --windowed --name "ProjectHubPro" ProjectHubPro.py
+
+      - name: Version JSON
+        working-directory: app
+        shell: pwsh
         run: |
           $c = Get-Content "ProjectHubPro.py" -Raw
-          if ($c -match "APP_VERSION\s*=\s*'([^']+)'") { $v = $Matches[1] } else { $v = "4.0.0" }
+          if ($c -match "APP_VERSION\s*=\s*'([^']+)'") { $v = $Matches } else { $v = "4.0.0" }
           $json = @{ version = $v; exe_url = "https://github.com{{ github.repository }}/releases/latest/download/ProjectHubPro.exe" } | ConvertTo-Json
           $json | Out-File -FilePath "version.json" -Encoding utf8
           echo "TAG=v$v" >> $env:GITHUB_ENV
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG }}
           files: |
-            dist/ProjectHubPro.exe
-            version.json
+            app/dist/ProjectHubPro.exe
+            app/version.json
